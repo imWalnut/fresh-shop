@@ -18,15 +18,41 @@ export const useMemberStore = defineStore(
       profile.value = undefined
     }
 
+    // 会员认证 0未认证 1认证审核中 2已认证 3认证已驳回
+    const authorityStatus = ref<number>(0)
+
+    // 保存会员认证状态
+    const setAuthorityStatus = (val: any) => {
+      authorityStatus.value = val
+    }
+
+    // 清理会员认证状态
+    const clearAuthorityStatus = () => {
+      authorityStatus.value = 0
+    }
+
     // 记得 return
     return {
       profile,
       setProfile,
       clearProfile,
+      authorityStatus,
+      setAuthorityStatus,
+      clearAuthorityStatus,
     }
   },
   // TODO: 持久化
   {
-    persist: true,
+    persist: {
+      // 调整为兼容多端的API
+      storage: {
+        setItem(key, value) {
+          uni.setStorageSync(key, value)
+        },
+        getItem(key) {
+          return uni.getStorageSync(key)
+        },
+      },
+    },
   },
 )

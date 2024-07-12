@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { getCategoryBannerAPI, getCategoryList, getCategoryProductAPI } from '@/services/category'
+import { getCategoryList, getCategoryProductAPI } from '@/services/category'
 import { onLoad } from '@dcloudio/uni-app'
-import CustomNavbar from '@/pages/category/components/CustomNavbar.vue'
-import type { BannerItem, CategoryItem, GuessProductItem, GuessProductSpecItem } from '@/types/home'
+import CustomNavbar from '@/pages/categories/components/CustomNavbar.vue'
+import type { CategoryItem, GuessProductItem, GuessProductSpecItem } from '@/types/home'
 import type { PageProductParams } from '@/types/category'
+
+// 定义 props 接收数据
+const props = defineProps<{
+  index: number
+}>()
 
 const activeIndex = ref(0)
 const categoryList = ref<CategoryItem[]>([])
@@ -22,7 +27,7 @@ const finish = ref(false)
 const getCategoryTopData = async () => {
   const res = await getCategoryList()
   categoryList.value = res.data
-  await onChangeTopCategory(0)
+  await onChangeTopCategory(props.index)
 }
 
 // 切换一级分类
@@ -92,7 +97,7 @@ onLoad(() => {
 <template>
   <view class="viewport">
     <!--  自定义导航栏-->
-    <CustomNavbar :list="categoryList" @change="onChangeTopCategory" />
+    <CustomNavbar :index="index" :list="categoryList" @change="onChangeTopCategory" />
     <!-- 分类 -->
     <view class="categories">
       <!-- 左侧：一级分类 -->
