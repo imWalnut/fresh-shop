@@ -8,12 +8,19 @@ import { ref } from 'vue'
 import HotPanel from '@/pages/index/components/HotPanel.vue'
 import PageSkeleton from '@/pages/index/components/PageSkeleton.vue'
 import {useGuessList} from "@/composables";
+import {useMemberStore} from "@/stores";
+import {addCartsInfo} from "@/services/cart";
+import type {CartParams} from "@/types/cart";
 
 const bannerList = ref<BannerItem[]>([])
 const categoryList = ref<CategoryItem[]>([])
 const groupList = ref<HotItem[]>([])
 const isTriggered = ref(false)
 const isLoading = ref(false)
+const popup = ref()
+const localData = ref()
+const isShowSku = ref(false)
+const memberStore = useMemberStore()
 
 // 获取轮播图数据
 const getHomeBannerData = async () => {
@@ -53,6 +60,46 @@ const onRefreshRefresher = async () => {
   isTriggered.value = false
 }
 
+// 打开sku弹出层
+const onOpenPopup = async (val) => {
+  // 判断是否登录
+  if (!memberStore.profile) {
+    uni.navigateTo({ url: '/pages/login/login' })
+    return
+  }
+  // 判断是否认证
+  if (memberStore.authorityStatus !== 2) {
+    uni.navigateTo({ url: '/pages/authority/authority' })
+    return
+  }
+  // 判断是否多规格
+  if (val.productSpecs.length > 1) {
+    localData.value = val
+    isShowSku.value = true
+    popup.value.open()
+  } else {
+    // 单规格直接加入购物车
+    const body: CartParams = {
+      userId: memberStore.profile.id,
+      quantity: 1,
+      productSpecId: val.productSpecs[0].id,
+      totalPrice: val.productSpecs[0].price,
+    }
+    await addCartsInfo(body)
+  }
+}
+
+// 改变popup状态
+const changePopup: UniHelper.UniPopupOnChange = (event) => {
+  if (event.show) {
+    uni.hideTabBar()
+  } else {
+    localData.value = undefined
+    isShowSku.value = false
+    uni.showTabBar()
+  }
+}
+
 onLoad(async () => {
   isLoading.value = true
   await Promise.all([getHomeBannerData(), getHomeCategoryData(), getHomeGroupData()])
@@ -82,9 +129,13 @@ onLoad(async () => {
       <!--  热门推荐-->
       <HotPanel :list="groupList" />
       <!--  猜你喜欢-->
-      <WalnutGuess ref="refGuess" />
+      <WalnutGuess ref="refGuess" @open="onOpenPopup" />
     </template>
   </scroll-view>
+  <!-- uni-ui 弹出层 -->
+  <uni-popup ref="popup" type="bottom" background-color="#fff" @change="changePopup">
+    <WalnutShop v-if="isShowSku" :localData="localData" @close="popup.close()" />
+  </uni-popup>
 </template>
 
 <style lang="scss">

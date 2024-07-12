@@ -4,6 +4,7 @@ import { getHomeProductAPI } from '@/services/home'
 import { onMounted, ref } from 'vue'
 import type { GuessProductItem, GuessProductSpecItem } from '@/types/home'
 import type { PageParams } from '@/types/global'
+import {useMemberStore} from "@/stores";
 
 const productList = ref<GuessProductItem[]>([])
 const pageParams: Required<PageParams> = {
@@ -12,6 +13,9 @@ const pageParams: Required<PageParams> = {
 }
 // 分页结束标记
 const finish = ref(false)
+const memberStore = useMemberStore()
+
+const emit = defineEmits(['open'])
 
 // 获取首页商品数据
 const getHomeProductData = async () => {
@@ -56,6 +60,11 @@ const resetData = () => {
   finish.value = false
 }
 
+// 点击购物车
+const onTapShop = (val) => {
+  emit('open', val)
+}
+
 onMounted(() => {
   getHomeProductData()
 })
@@ -89,10 +98,11 @@ defineExpose({
       <view class="bottom">
         <view class="price">
           <text class="price-icon">¥</text>
-          <text>{{ item.price }}</text>
+          <text v-if="memberStore.authorityStatus === 2">{{ item.price }}</text>
+          <text v-else>****</text>
           <text class="price-icon">/{{ item.productSpecs[0].specName }}</text>
         </view>
-        <view class="shop-icon" />
+        <uni-icons type="cart" class="shop-icon" color="white" @tap.prevent="onTapShop(item)" />
       </view>
     </navigator>
   </view>
@@ -180,11 +190,15 @@ defineExpose({
       .shop-icon {
         width: 45rpx;
         height: 45rpx;
-        background: url('../static/tabs/cart_default.png') center center no-repeat;
-        background-size: 80%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         background-color: #27ba9b;
         border-radius: 50%;
         overflow: hidden;
+        .uni-icons {
+          font-size: 34rpx;
+        }
       }
     }
     .name {

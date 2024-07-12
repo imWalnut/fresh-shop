@@ -6,6 +6,8 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getUserAuthorityStatus } from '@/services/my'
 import {useGuessList} from "@/composables";
+import {addCartsInfo} from "@/services/cart";
+import type {CartParams} from "@/types/cart";
 
 const { safeAreaInsets } = uni.getSystemInfoSync()
 // 订单选项
@@ -20,6 +22,9 @@ const orderTypes = [
 const memberStore = useMemberStore()
 const userInfo = memberStore.profile?.userInfo
 const authority = ref('未认证')
+const popup = ref()
+const localData = ref()
+const isShowSku = ref(false)
 
 // 判断认证状态
 const getAuthorityStatus = async () => {
@@ -56,6 +61,46 @@ const goAuthority = () => {
 
 // 猜你喜欢组合式函数调用
 const {refGuess, onScrollTolower} = useGuessList()
+
+// 打开sku弹出层
+const onOpenPopup = async (val) => {
+  // 判断是否登录
+  if (!memberStore.profile) {
+    uni.navigateTo({ url: '/pages/login/login' })
+    return
+  }
+  // 判断是否认证
+  if (memberStore.authorityStatus !== 2) {
+    uni.navigateTo({ url: '/pages/authority/authority' })
+    return
+  }
+  // 判断是否多规格
+  if (val.productSpecs.length > 1) {
+    localData.value = val
+    isShowSku.value = true
+    popup.value.open()
+  } else {
+    // 单规格直接加入购物车
+    const body: CartParams = {
+      userId: memberStore.profile.id,
+      quantity: 1,
+      productSpecId: val.productSpecs[0].id,
+      totalPrice: val.productSpecs[0].price,
+    }
+    await addCartsInfo(body)
+  }
+}
+
+// 改变popup状态
+const changePopup: UniHelper.UniPopupOnChange = (event) => {
+  if (event.show) {
+    uni.hideTabBar()
+  } else {
+    localData.value = undefined
+    isShowSku.value = false
+    uni.showTabBar()
+  }
+}
 
 onShow(async () => {
   if (userInfo) {
@@ -140,9 +185,13 @@ onShow(async () => {
     </view>
     <!-- 猜你喜欢 -->
     <view class="guess">
-      <WalnutGuess ref="refGuess" />
+      <WalnutGuess ref="refGuess" @open="onOpenPopup" />
     </view>
   </scroll-view>
+  <!-- uni-ui 弹出层 -->
+  <uni-popup ref="popup" type="bottom" background-color="#fff" @change="changePopup">
+    <WalnutShop v-if="isShowSku" :localData="localData" @close="popup.close()" />
+  </uni-popup>
 </template>
 
 <style lang="scss">
@@ -150,6 +199,12 @@ page {
   height: 100%;
   overflow: hidden;
   background-color: #f7f7f8;
+  display: flex;
+  flex-direction: column;
+}
+
+.scroll-view {
+  flex: 1;
 }
 
 .viewport {

@@ -135,7 +135,7 @@ onLoad(() => {
                   <text>{{ item.price }}</text>
                   <text class="price-icon">/{{ item.productSpecs[0].specName }}</text>
                 </view>
-                <view class="shop-icon" />
+                <uni-icons type="cart" class="shop-icon" color="white" />
               </view>
             </view>
           </navigator>
@@ -300,11 +300,15 @@ page {
         .shop-icon {
           width: 45rpx;
           height: 45rpx;
-          background: url('../../static/tabs/cart_default.png') center center no-repeat;
-          background-size: 80%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           background-color: #27ba9b;
           border-radius: 50%;
           overflow: hidden;
+          .uni-icons {
+            font-size: 34rpx;
+          }
         }
       }
     }
